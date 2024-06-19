@@ -11,9 +11,10 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 class DownloadAndProcessZip(beam.DoFn):
-    def __init__(self, bucket_name, folder_name, extract):
+    def __init__(self, bucket_name, folder_name, zip_folder_name, extract):
         self.bucket_name = bucket_name
         self.folder_name = folder_name
+        self.zip_folder_name = zip_folder_name
         self.extract = extract
 
     def start_bundle(self):
@@ -30,6 +31,12 @@ class DownloadAndProcessZip(beam.DoFn):
             zip_name = url.split("/")[-1].replace(".zip", "")
             logging.info(f"Downloaded ZIP: {zip_name}")
 
+            # Guardar el ZIP en la carpeta historicos_zip
+            zip_blob_path = f'{self.zip_folder_name}/{zip_name}.zip'
+            zip_blob = self.storage_client.bucket(self.bucket_name).blob(zip_blob_path)
+            zip_blob.upload_from_string(response.content)
+            logging.info(f"Downloaded and uploaded ZIP to {zip_blob_path}")
+
             if self.extract:
                 with zipfile.ZipFile(io.BytesIO(response.content)) as z:
                     for file_info in z.infolist():
@@ -41,17 +48,12 @@ class DownloadAndProcessZip(beam.DoFn):
                             logging.info(f"Uploaded file: {blob_path}")
                 yield f"Extracted {zip_name}"
             else:
-                file_name = url.split("/")[-1]
-                blob_path = f'{self.folder_name}/{file_name}'
-                blob = self.storage_client.bucket(self.bucket_name).blob(blob_path)
-                blob.upload_from_string(response.content)
-                logging.info(f"Downloaded and uploaded {file_name} to {blob_path}")
-                yield f"Downloaded and uploaded {file_name} to {blob_path}"
+                yield f"Downloaded and uploaded {zip_name}.zip to {zip_blob_path}"
         
         except requests.exceptions.RequestException as e:
             logging.error(f"Failed to download or process {url}: {e}")
 
-def run_pipeline(json_url, bucket_name, folder_name, extract):
+def run_pipeline(json_url, bucket_name, folder_name, zip_folder_name, extract):
     try:
         # Descargar el JSON desde la URL
         response = requests.get(json_url)
@@ -68,7 +70,7 @@ def run_pipeline(json_url, bucket_name, folder_name, extract):
         with beam.Pipeline(options=options) as p:
             (p
              | 'Create URLs' >> beam.Create(urls)
-             | 'Download and Process' >> beam.ParDo(DownloadAndProcessZip(bucket_name, folder_name, extract)))
+             | 'Download and Process' >> beam.ParDo(DownloadAndProcessZip(bucket_name, folder_name, zip_folder_name, extract)))
         
         logging.info("Pipeline executed successfully.")
     except requests.exceptions.RequestException as e:
@@ -78,6 +80,7 @@ if __name__ == '__main__':
     json_url = "https://us-central1-duoc-bigdata-sc-2023-01-01.cloudfunctions.net/datos_transporte_et"
     bucket_name = 'bcrudo_historicosbeam'
     folder_name = 'historicos'
+    zip_folder_name = 'historicos_zip'
     extract = True  # Cambiar a False si solo se quiere descargar sin extraer
     
-    run_pipeline(json_url, bucket_name, folder_name, extract)
+    run_pipeline(json_url, bucket_name, folder_name, zip_folder_name, extract)
