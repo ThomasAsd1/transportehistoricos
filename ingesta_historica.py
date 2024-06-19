@@ -79,7 +79,7 @@ def run_pipeline(json_url, bucket_name, folder_name, zip_folder_name, extract):
 if __name__ == '__main__':
     json_url = "https://us-central1-duoc-bigdata-sc-2023-01-01.cloudfunctions.net/datos_transporte_et"
     bucket_name = 'bcrudo_historicosbeam'
-    folder_name = 'historicos'
+    folder_name = 'historicos_txt'
     zip_folder_name = 'historicos_zip'
     extract = True  # Cambiar a False si solo se quiere descargar sin extraer
     
