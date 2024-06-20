@@ -31,8 +31,8 @@ class DownloadAndProcessZip(beam.DoFn):
             zip_name = url.split("/")[-1].replace(".zip", "")
             logging.info(f"Downloaded ZIP: {zip_name}")
 
-            # Guardar el ZIP en la carpeta historicos_zip
-            zip_blob_path = f'{self.zip_folder_name}/{zip_name}.zip'
+            # Guardar el ZIP en la carpeta historicos_zip dentro de bcrudo_historicosbeam
+            zip_blob_path = f'bcrudo_historicosbeam/{self.zip_folder_name}/{zip_name}.zip'
             zip_blob = self.storage_client.bucket(self.bucket_name).blob(zip_blob_path)
             zip_blob.upload_from_string(response.content)
             logging.info(f"Downloaded and uploaded ZIP to {zip_blob_path}")
@@ -41,8 +41,8 @@ class DownloadAndProcessZip(beam.DoFn):
                 with zipfile.ZipFile(io.BytesIO(response.content)) as z:
                     for file_info in z.infolist():
                         with z.open(file_info) as file:
-                            # Crear la ruta del blob incluyendo la carpeta con el nombre del ZIP
-                            blob_path = f'{self.folder_name}/{zip_name}/{file_info.filename}'
+                            # Crear la ruta del blob incluyendo la carpeta bcrudo_historicosbeam/historicos_txt con el nombre del ZIP
+                            blob_path = f'bcrudo_historicosbeam/{self.folder_name}/{zip_name}/{file_info.filename}'
                             blob = self.storage_client.bucket(self.bucket_name).blob(blob_path)
                             blob.upload_from_file(file)
                             logging.info(f"Uploaded file: {blob_path}")
@@ -78,7 +78,7 @@ def run_pipeline(json_url, bucket_name, folder_name, zip_folder_name, extract):
 
 if __name__ == '__main__':
     json_url = "https://us-central1-duoc-bigdata-sc-2023-01-01.cloudfunctions.net/datos_transporte_et"
-    bucket_name = 'bcrudo_historicosbeam'
+    bucket_name = 'transporte001'  # Cambiado el nombre del bucket
     folder_name = 'historicos_txt'
     zip_folder_name = 'historicos_zip'
     extract = True  # Cambiar a False si solo se quiere descargar sin extraer
