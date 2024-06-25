@@ -1,3 +1,5 @@
-apache-beam[gcp]==2.40.0
-google-cloud-bigquery==3.1.0
-shapely==1.8.5
+requests
+apache-beam[gcp]
+google-cloud-storage
+google-auth-httplib2>=0.2.0,<1.0.0
+google-api-python-client
